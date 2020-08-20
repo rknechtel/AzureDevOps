@@ -1,0 +1,194 @@
+# *****************************************************************
+# Maven
+# Build your Java project and run tests with Apache Maven.
+# Add steps that analyze code, save build artifacts, deploy, and more:
+# https://docs.microsoft.com/azure/devops/pipelines/languages/java
+#
+# *****************************************************************
+#
+# Project: <Development Project Name>
+# azure-pipelines.yml creation date: <Creation Date>
+# Created By: <Developers Name>
+#
+# *****************************************************************
+
+trigger:
+- master
+- feature/*
+
+#pool:
+#  vmImage: 'ubuntu-latest'
+
+# SonarQube & Coverity run from here:
+pool:
+  name: DevOps
+  vmImage: MYSERVER
+
+# Note: These are variables or Variable Groups used in the pipeline
+# Need to put into secure variables in ADO:
+# Pipelines --> Library --> Create Variable Group:
+# Variable Group = Coverity
+# Description = Variables for use with Coverity
+# IN
+# UserId = ID
+# PW = SECRETPW
+variables:
+  - group: Coverity
+  - name: application
+    value: <Development Project Name (no .jar or .war extension)>
+    readonly: true
+
+# Pipeline Steps
+steps:
+
+# 1) Download Settings.xml
+- task: DownloadSecureFile@1
+  name: secureFile
+  inputs:
+    secureFile: 'settings.xml'
+
+# 2) Authenticate Maven
+- task: MavenAuthenticate@0
+  displayName: Maven Authenticate
+  inputs:
+    artifactFeeds: MYCOMPANY
+
+# 3) Prep SonaQube 
+- task: SonarQubePrepare@4
+  inputs:
+    SonarQube: 'SonarQube - MINE'
+    scannerMode: 'Other'
+
+# 4) Run the Maven build
+# Note: Must use --global-settings
+# Note2: org.jacoco:jacoco-maven-plugin:prepare-agent - is for SonarQube Code Coverage
+- task: Maven@3
+  inputs:
+    mavenPomFile: 'pom.xml'
+    mavenOptions: '-Xmx3072m'
+    javaHomeOption: 'JDKVersion'
+    jdkVersionOption: '1.8'
+    jdkArchitectureOption: 'x64'
+    publishJUnitResults: true
+    testResultsFiles: '**/surefire-reports/TEST-*.xml'
+    sonarQubeRunAnalysis: true
+    sqMavenPluginVersionChoice: 'latest'
+    codeCoverageEnabled: true
+    goals: 'clean org.jacoco:jacoco-maven-plugin:prepare-agent install'
+    mavenFeedAuthenticate: true
+    options: --global-settings $(secureFile.secureFilePath)
+
+# 5) Create Coverity Project and Stream if not already existing in Coverity
+# NOTE: $(UserId) $(PW) are a variable group ("Coverity") in Pipeline Library
+- task: BatchScript@1
+  displayName: 'Create Coverity Project and Stream'
+  inputs:
+    filename: D:\Scripts\Coverity\CreateCovProjectStream.bat
+    arguments: $(application) $(UserId) $(PW)
+    #modifyEnvironment: False # Optional
+    #workingFolder: # Optional
+    #failOnStandardError: false # Optional
+
+# NOTE: Make sure a Project and Stream have been created in Coverity Before enabling this!
+# 6) Synopsys Coverity Scan
+# Note: Must use --global-settings
+# issueStatus values: successful, unstable, failure
+# Ref: https://synopsys.atlassian.net/wiki/spaces/INTDOCS/pages/129662977/Coverity+Extension+for+Azure+DevOps
+- task: synopsys-coverity@1
+  displayName: 'Synopsys Coverity Scan'
+  inputs:
+    coverityService: 'CoverityProductionHTTP'
+    projectName: '$(application)'
+    streamName: '$(application)'
+    checkIssues: true
+    issueView: 'High Impact Outstanding'
+    issueStatus: 'unstable'
+    coverityBuildDirectory: '$(Build.Repository.LocalPath)'
+    buildCommand: 'mvn --global-settings $(secureFile.secureFilePath) clean install'
+    customCommandArgs: true
+    covAnalyzeArgs: '--security --webapp-security --all'
+    covCommitArgs: '--scm git'
+    allowUntrusted: true
+
+
+# 7) Synopsys BlackDuck Detect
+# Note: Windows Only
+- task: SynopsysDetectTask@2
+  displayName: 'Synopsys BlackDuck Detect'
+  inputs:
+    Products: 'BD'
+    BlackDuckService: 'BlackDuckAzure'
+    DetectVersion: 'latest'
+    DetectFolder: '$(Agent.TempDirectory)'
+    DetectArguments: '--blackduck.trust.cert=true --logging.level.com.synopsys.integration=DEBUG --detect.code.location.name=$(application) --detect.project.name=$(application) --detect.maven.build.command="--global-settings $(secureFile.secureFilePath)"'
+
+# 8) Run the Maven JUnit Tests
+- task: Maven@3
+  displayName: Junit Testing
+  inputs:
+    mavenPomFile: 'pom.xml'
+    mavenOptions: '-Xmx3072m'
+    javaHomeOption: 'JDKVersion'
+    jdkVersionOption: '1.8'
+    jdkArchitectureOption: 'x64'
+    publishJUnitResults: true
+    testResultsFiles: '**/*.xml'
+    goals: 'test'
+    mavenFeedAuthenticate: true
+    options: --global-settings $(secureFile.secureFilePath)
+
+# 9) Publish Code Coverage Results to Azure DevOps
+#    Publish JaCoCo code coverage results from a build
+- task: PublishCodeCoverageResults@1
+  displayName: Publish code coverage results
+  inputs:
+    codeCoverageTool: JaCoCo
+    summaryFileLocation: '**/surefire-reports/TEST-*.xml'
+    pathToSources: '$(System.DefaultWorkingDirectory)'
+    additionalCodeCoverageFiles: '$(System.DefaultWorkingDirectory)/target/jacoco.exec'
+
+# 10) Publish the SonarQube results.
+- task: SonarQubePublish@4
+  inputs:
+    pollingTimeoutSec: '300'
+
+# 11) Copy any built files to the staging directory.
+- task: CopyFiles@2
+  displayName: 'Copy Files to artifact staging directory'
+  inputs:
+    SourceFolder: '$(System.DefaultWorkingDirectory)/target'
+    # <Add .jar or .war to end of> $(application)
+    Contents: '$(application)'
+    targetFolder: '$(Build.ArtifactStagingDirectory)'
+
+# Note: Uncomment this for JAR file Build Pipelines
+# 12) Publish JAR file to Azure Artifacts Maven Feed
+#- task: Maven@3
+#  inputs:
+#    mavenPomFile: 'pom.xml'
+#    mavenOptions: '-Xmx3072m'
+#    javaHomeOption: 'JDKVersion'
+#    jdkVersionOption: '1.8'
+#    jdkArchitectureOption: 'x64'
+#    publishJUnitResults: true
+#    testResultsFiles: '**/surefire-reports/TEST-*.xml'
+#    sonarQubeRunAnalysis: true
+#    sqMavenPluginVersionChoice: 'latest'
+#    codeCoverageEnabled: true
+#    goals: 'deploy -Dbuildversion=$version'
+#    mavenFeedAuthenticate: true
+#    options: --global-settings $(secureFile.secureFilePath)
+
+# Note: Uncoment this for Web Applications that have External Coniguration Files
+# 13)  Copy Config files to the staging directory - For Web Applications.
+#- task: CopyFiles@2
+#  displayName: 'Copy Files to artifact staging directory'
+#  inputs:
+#    SourceFolder: '$(System.DefaultWorkingDirectory)/src/main/config'
+#    targetFolder: '$(Build.ArtifactStagingDirectory)/Config'
+    
+# 14) Publish the built artifact(s) for a release
+- task: PublishBuildArtifacts@1
+  inputs:
+    ArtifactName: '$(application)'
+    PathtoPublish: '$(Build.ArtifactStagingDirectory)'
