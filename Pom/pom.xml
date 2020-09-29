@@ -1,0 +1,59 @@
+
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+<!-- File: pom.xml -->
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>com.MyCompany</groupId>
+    <artifactId>APPLICATIONNAME</artifactId>
+    <version>APPLICATIONNAME-VERSION</version>
+
+    <packaging>war</packaging>
+
+    <name>APPLICATIONNAME</name>
+    <description>APPLICATIONDESCRIPTION</description>
+
+
+    <properties>
+
+    </properties>
+
+
+    <distributionManagement>
+        <repository>
+          <id>MyCompany</id>
+          <url>https://pkgs.dev.azure.com/MyCompany/_packaging/MyCompany/maven/v1</url>
+          <releases>
+            <enabled>true</enabled>
+          </releases>
+          <snapshots>
+            <enabled>true</enabled>
+          </snapshots>
+        </repository>
+    </distributionManagement> 
+
+    <repositories>
+        <repository>
+          <id>MyCompany</id>
+          <url>https://pkgs.dev.azure.com/MyCompany/_packaging/MyCompany/maven/v1</url>
+          <releases>
+            <enabled>true</enabled>
+          </releases>
+          <snapshots>
+            <enabled>true</enabled>
+          </snapshots>
+        </repository>
+    </repositories>
+    
+    <dependencies>
+
+    </dependencies>
+
+    <build>
+
+    </build>
+
+
+</project>

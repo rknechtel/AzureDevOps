@@ -1,0 +1,85 @@
+
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!--File: settings.xml -->
+
+<settings xmlns="http://maven.apache.org/SETTINGS/1.0.0"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+xsi:schemaLocation="http://maven.apache.org/SETTINGS/1.0.0 http://maven.apache.org/xsd/settings-1.0.0.xsd">
+
+  <localRepository>/home/vsts/.m2/repository</localRepository>
+
+<servers>
+        <server>
+          <id>MyCompany</id>
+          <username>MyCompany</username>
+          <password>[Maven Credentials Token]</password>		
+        </server>
+</servers>
+
+	<profiles>
+		<profile>
+			<id>MyProfile</id>
+			<repositories>
+
+                <!-- Azure Artifacts -->
+				<repository>
+				  <id>MyCompany</id>
+				  <url>https://pkgs.dev.azure.com/MyCompany/_packaging/MyCompany/maven/v1</url>
+				  <releases>
+					<enabled>true</enabled>
+				  </releases>
+				  <snapshots>
+					<enabled>true</enabled>
+				  </snapshots>
+				</repository>
+				
+				<!-- Repositories to pull Dependancies from -->
+				<repository>
+					<id>Maven Central</id>
+					<name>Maven Central Repository</name>
+					<url>http://repo1.maven.org/maven2/</url>
+				</repository>
+				<repository>
+					<id>JBoss Public Group</id>
+					<name>JBoss Public Repository</name>
+					<url>https://repository.jboss.org/nexus/content/groups/public/</url>
+				</repository>
+				<repository>
+					<id>JBoss Deprecated</id>
+					<name>JBoss Deprecated Repository</name>
+					<url>https://repository.jboss.org/nexus/content/repositories/deprecated/</url>
+					<layout>default</layout>
+					<releases>
+						<enabled>true</enabled>
+						<updatePolicy>never</updatePolicy>
+					</releases>
+					<snapshots>
+						<enabled>false</enabled>
+					</snapshots>
+				</repository>	
+				<repository>
+					<id>Apache Releases</id>
+					<name>Apache Releases Repository</name>
+					<url>https://repository.apache.org/content/repositories/releases/</url>
+				</repository>
+				<repository>
+					<id>Apache Snapshots</id>
+					<name>Apache Snapshots Repository</name>
+					<url>http://repository.apache.org/snapshots/</url>
+				</repository>
+				<repository>
+					<id>Java.net Public Group</id>
+					<name>Java.net Public Group Repository</name>
+					<url>https://maven.java.net/content/repositories/public/</url>
+				</repository>
+			
+			</repositories>
+		</profile>
+	</profiles>
+
+	<activeProfiles>
+		<activeProfile>MyProfile</activeProfile>
+	</activeProfiles>
+
+</settings>
