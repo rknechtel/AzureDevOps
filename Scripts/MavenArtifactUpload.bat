@@ -6,6 +6,9 @@ REM Author: Richard Knechtel
 REM Date: 02/19/2020
 REM Description: This script will upload dependencies  to an Artifact Repository.
 REM
+REM LICENSE: 
+REM This script is in the public domain, free from copyrights or restrictions.
+REM
 REM Example Call:
 REm          MavenArtifactUpload.bat my-utils-1.0.0.pom.xml my-utils-1.0.0.jar MyCompany https://pkgs.dev.azure.com/MyCompany/_packaging/MyCompany/maven/v1
 REM

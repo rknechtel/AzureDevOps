@@ -7,6 +7,9 @@ REM Author: Richard Knechtel
 REM Date: 02/13/2020
 REM Description: This script will push code changes to Azure Repos (Git). 
 REM
+REM LICENSE: 
+REM This script is in the public domain, free from copyrights or restrictions.
+REM
 REM ************************************************************************
 
 echo.
